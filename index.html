@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>UID Chat & Voice/Video</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-chat: #efeae2;
+    --bg-app: #f0f2f5;
+    --surface: #ffffff;
+    --surface-hover: #f5f6f6;
+    --border: #e9edef;
+    --primary: #00a884;
+    --primary-dark: #008f6f;
+    --danger: #ea4335;
+    --danger-dark: #d32f2f;
+    --text-main: #111b21;
+    --text-muted: #667781;
+    --msg-me: #d9fdd3;
+    --msg-them: #ffffff;
+    --shadow-sm: 0 1px 2px rgba(11,20,26,.05);
+    --shadow-md: 0 4px 12px rgba(11,20,26,.08);
+    --shadow-lg: 0 8px 24px rgba(11,20,26,.15);
+    --radius: 12px;
+    --font-main: 'Inter', 'Segoe UI', sans-serif;
+  }
+
+  html, body { 
+    height: 100vh; height: 100dvh; 
+    width: 100%; font-family: var(--font-main); 
+    background: var(--bg-app); color: var(--text-main); 
+    overflow: hidden; 
+  }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 10px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.3); }
+
+  .hidden { display: none !important; }
+
+  /* ─── LOGIN SCREEN ─── */
+  #login-screen {
+    position: fixed; inset: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg-app); padding: 1rem;
+  }
+  .login-card { background: var(--surface); border-radius: 16px; padding: 3rem 2.5rem; width: 100%; max-width: 420px; text-align: center; box-shadow: var(--shadow-md); animation: fadeUp 0.4s ease both; }
+  .login-logo { width: 72px; height: 72px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; color: white; box-shadow: var(--shadow-sm); }
+  .login-card h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+  .login-desc { color: var(--text-muted); margin-bottom: 2rem; font-size: 0.95rem; line-height: 1.5; }
+  .btn-google { width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.75rem; background: var(--surface); border: 1px solid #dadce0; color: #3c4043; font-family: var(--font-main); font-size: 0.95rem; font-weight: 500; padding: 0.75rem 1.5rem; border-radius: 24px; cursor: pointer; transition: all 0.2s; }
+  .btn-google:hover { background: var(--surface-hover); box-shadow: var(--shadow-sm); }
+
+  /* ─── APP LAYOUT ─── */
+  #app-screen { display: flex; height: 100%; width: 100vw; max-width: 1600px; margin: 0 auto; background: var(--surface); position: relative; overflow: hidden; box-shadow: var(--shadow-md) }
+
+  /* ─── SIDEBAR ─── */
+  .sidebar { width: 380px; flex-shrink: 0; display: flex; flex-direction: column; background: var(--surface); border-right: 1px solid var(--border); z-index: 10; transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
+  .sidebar-header { background: var(--bg-app); padding: 1.25rem 1rem; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .sidebar-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
+  .sidebar-top h2 { font-size: 1.25rem; font-weight: 600; }
+  .btn-logout { background: none; border: none; color: var(--danger-dark); font-size: 0.9rem; font-weight: 500; cursor: pointer; padding: 0.4rem 0.8rem; border-radius: 6px; transition: 0.2s; }
+  .btn-logout:hover { background: rgba(211, 47, 47, 0.1); }
+  .uid-card { background: var(--surface); border-radius: 8px; padding: 0.8rem; margin-bottom: 1rem; box-shadow: var(--shadow-sm); border: 1px solid var(--border); }
+  .uid-label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.4rem; }
+  .uid-row { display: flex; align-items: center; gap: 0.5rem; background: var(--bg-app); border-radius: 6px; padding: 0.4rem 0.6rem; }
+  #my-uid { flex: 1; background: transparent; border: none; outline: none; color: var(--text-main); font-family: monospace; font-size: 0.85rem; }
+  .btn-copy { background: var(--primary); color: white; border: none; padding: 0.3rem 0.75rem; border-radius: 6px; font-size: 0.8rem; cursor: pointer; transition: 0.2s; font-weight: 500; }
+  .btn-copy:hover { background: var(--primary-dark); }
+  .add-friend-form { display: flex; gap: 0.5rem; }
+  .add-friend-form input { flex: 1; padding: 0.6rem 0.8rem; border: 1px solid var(--border); border-radius: 8px; font-size: 0.9rem; outline: none; transition: 0.2s; }
+  .add-friend-form input:focus { border-color: var(--primary); }
+  .btn-add { background: var(--surface); color: var(--primary); border: 1px solid var(--primary); padding: 0 1rem; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: 0.2s; }
+  .btn-add:hover { background: var(--primary); color: white; }
+  #friends-list { flex: 1; overflow-y: auto; background: var(--surface); }
+  .friends-empty { padding: 2rem; text-align: center; color: var(--text-muted); font-size: 0.95rem; line-height: 1.5; }
+  .friend-item { display: flex; align-items: center; gap: 1rem; padding: 0.85rem 1rem; cursor: pointer; border-bottom: 1px solid var(--border); transition: background 0.2s; }
+  .friend-item:hover { background: var(--surface-hover); }
+  .friend-item.active { background: var(--surface-hover); border-left: 4px solid var(--primary); padding-left: calc(1rem - 4px); }
+  .friend-avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 600; flex-shrink: 0; }
+  .friend-info { flex: 1; overflow: hidden; }
+  .friend-name { font-weight: 500; color: var(--text-main); margin-bottom: 0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .friend-email { font-size: 0.8rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* ─── CHAT AREA ─── */
+  .chat-area { flex: 1; display: flex; flex-direction: column; background: var(--bg-chat); position: relative; overflow: hidden; }
+  .chat-area::before { content: ''; position: absolute; inset: 0; z-index: 0; opacity: 0.6; background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M54.627 0l.83.83v58.34l-.83.83H5.373l-.83-.83V.83l.83-.83h49.254zM53.5 1.5H6.5v57h47v-57z' fill='%23e4ddd6' fill-opacity='0.4' fill-rule='evenodd'/%3E%3C/svg%3E"); pointer-events: none; }
+  #empty-chat { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1; background: var(--bg-app); text-align: center; padding: 2rem; }
+  .empty-icon { width: 120px; height: 120px; background: var(--border); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; color: var(--text-muted); }
+  #empty-chat p { font-size: 1.5rem; font-weight: 300; margin-bottom: 1rem; }
+  #empty-chat span { color: var(--text-muted); max-width: 400px; line-height: 1.5; font-size: 0.95rem; }
+
+  #active-chat { display: flex; flex-direction: column; height: 100%; width: 100%; z-index: 1; overflow: hidden; }
+  .chat-header { display: flex; align-items: center; gap: 1rem; padding: 0.6rem 1rem; background: var(--bg-app); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .back-btn { display: none; background: transparent; border: none; color: var(--text-muted); padding: 0.5rem; margin-left: -0.5rem; cursor: pointer; border-radius: 50%; }
+  .back-btn:hover { background: var(--border); }
+  .chat-header-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 1.1rem; }
+  .chat-header-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+  #chat-friend-name { font-weight: 600; color: var(--text-main); font-size: 1rem; }
+  .chat-status { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.1rem; }
+  
+  /* CALL BUTTONS */
+  .call-actions-header { display: flex; gap: 0.5rem; }
+  .call-btn {
+    background: transparent; border: none; color: var(--primary); cursor: pointer; padding: 0.6rem; border-radius: 50%; transition: 0.2s; display: flex; align-items: center; justify-content: center;
+  }
+  .call-btn:hover { background: var(--border); color: var(--primary-dark); }
+
+  #chat-messages { flex: 1 1 auto; height: 0; overflow-y: auto; padding: 1.5rem 5%; display: flex; flex-direction: column; gap: 0.4rem; }
+  .msg-bubble { max-width: 75%; padding: 0.5rem 0.85rem; font-size: 0.95rem; line-height: 1.4; border-radius: 8px; box-shadow: var(--shadow-sm); position: relative; word-break: break-word; animation: popIn 0.2s ease both; }
+  .msg-me { background: var(--msg-me); margin-left: auto; border-top-right-radius: 0; }
+  .msg-them { background: var(--msg-them); margin-right: auto; border-top-left-radius: 0; }
+
+  #send-message-form { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; padding-bottom: max(0.75rem, env(safe-area-inset-bottom)); background: var(--bg-app); border-top: 1px solid var(--border); flex-shrink: 0; position: relative; z-index: 10; }
+  #message-input { flex: 1; background: var(--surface); border: none; border-radius: 24px; padding: 0.85rem 1.2rem; font-size: 0.95rem; outline: none; box-shadow: var(--shadow-sm); }
+  .btn-send { width: 44px; height: 44px; border-radius: 50%; background: var(--primary); border: none; cursor: pointer; color: white; display: flex; align-items: center; justify-content: center; transition: 0.2s; flex-shrink: 0; }
+  .btn-send:hover { background: var(--primary-dark); transform: scale(1.05); }
+  .btn-send svg { width: 20px; height: 20px; fill: currentColor; transform: translateX(2px); }
+
+  /* ─── CALL MODAL (AUDIO & VIDEO ADAPTIVE) ─── */
+  #call-modal {
+    position: fixed; inset: 0; z-index: 200; background: rgba(17, 27, 33, 0.85); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center; opacity: 1; transition: opacity 0.3s;
+  }
+  #call-modal.hidden { display: none !important; opacity: 0; pointer-events: none; }
+  
+  .call-card {
+    background: var(--surface); border-radius: 20px; width: 90%; max-width: 320px;
+    text-align: center; box-shadow: var(--shadow-lg); animation: popIn 0.3s ease;
+    position: relative; overflow: hidden; transition: all 0.3s ease;
+  }
+  
+  .call-info-wrapper { padding: 2.5rem 2rem 1.5rem; transition: all 0.3s ease; position: relative; z-index: 2; }
+  .call-avatar-large { width: 80px; height: 80px; background: var(--primary); color: white; font-size: 2rem; font-weight: 600; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; transition: 0.3s; }
+  #call-peer-name { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.3rem; }
+  #call-status-text { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 0; }
+  
+  .call-actions { display: flex; gap: 1.5rem; justify-content: center; padding: 0 2rem 2.5rem; position: relative; z-index: 2; }
+  .btn-call-action { width: 56px; height: 56px; border-radius: 50%; border: none; cursor: pointer; color: white; display: flex; align-items: center; justify-content: center; transition: 0.2s; box-shadow: var(--shadow-md); }
+  .btn-call-action:hover { transform: scale(1.05); }
+  .btn-accept { background: var(--primary); }
+  .btn-reject { background: var(--danger); }
+
+  /* Video Layout Mode */
+  #video-container { display: none; position: absolute; inset: 0; z-index: 1; background: #111b21; }
+  #remote-video { width: 100%; height: 100%; object-fit: cover; }
+  #local-video {
+    position: absolute; right: 20px; top: 20px; width: 100px; height: 150px;
+    object-fit: cover; border-radius: 12px; border: 2px solid rgba(255,255,255,0.2);
+    box-shadow: var(--shadow-md); background: #222; z-index: 3;
+    transform: scaleX(-1); /* Mirror local video */
+  }
+
+  .call-card.video-active {
+    max-width: 900px; width: 95%; height: 85vh; padding: 0; background: #111b21;
+    display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .call-card.video-active #video-container { display: block; }
+  .call-card.video-active .call-avatar-large { display: none; }
+  .call-card.video-active .call-info-wrapper {
+    padding: 1.5rem; text-align: left;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 100%);
+  }
+  .call-card.video-active #call-peer-name { color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
+  .call-card.video-active #call-status-text { color: rgba(255,255,255,0.8); text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
+  .call-card.video-active .call-actions {
+    padding: 2rem; background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%);
+  }
+
+  /* ─── TOAST NOTIFICATION ─── */
+  .toast { position: fixed; bottom: 5rem; left: 50%; transform: translateX(-50%) translateY(20px); background: rgba(17, 27, 33, 0.9); color: white; font-size: 0.9rem; padding: 0.75rem 1.5rem; border-radius: 24px; opacity: 0; transition: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); pointer-events: none; z-index: 9999; box-shadow: var(--shadow-md); }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ─── ANIMATIONS & RESPONSIVE ─── */
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes popIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+  .msg-me { animation: popInRight 0.2s ease both; }
+  @keyframes popInRight { from { opacity: 0; transform: scale(0.95); transform-origin: top right; } to { opacity: 1; transform: scale(1); } }
+
+  @media (max-width: 768px) {
+    .sidebar { width: 100%; transition: transform 0.3s ease; }
+    .chat-area { position: absolute; inset: 0; transform: translateX(100%); transition: transform 0.3s ease; z-index: 20; }
+    #app-screen.show-chat .sidebar { transform: translateX(-30%); }
+    #app-screen.show-chat .chat-area { transform: translateX(0); }
+    .back-btn { display: flex; align-items: center; justify-content: center; }
+    #empty-chat { display: none !important; }
+    .msg-bubble { max-width: 85%; }
+  }
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN SCREEN -->
+  <div id="login-screen">
+    <div class="login-card">
+      <div class="login-logo">
+        <svg viewBox="0 0 24 24" width="36" height="36" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12c0 2.16.68 4.15 1.85 5.75L2.4 21.6l3.96-1.39C7.86 21.37 9.87 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm0 18c-1.81 0-3.5-.5-4.96-1.35l-.36-.21-2.67.94.96-2.55-.23-.37C3.58 14.86 3 13.48 3 12c0-4.96 4.04-9 9-9s9 4.04 9-9 9z"/></svg>
+      </div>
+      <h1>UID Chat</h1>
+      <div class="login-desc">A fast, simple, and secure messaging and voice/video calling experience.</div>
+      <button id="login-btn" class="btn-google">
+        <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        </svg>
+        Sign in with Google
+      </button>
+    </div>
+  </div>
+
+  <!-- APP SCREEN -->
+  <div id="app-screen" class="hidden">
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-top">
+          <h2>Chats</h2>
+          <button id="logout-btn" class="btn-logout">Sign out</button>
+        </div>
+        <div class="uid-card">
+          <div class="uid-label">Your UID</div>
+          <div class="uid-row">
+            <input type="text" id="my-uid" readonly>
+            <button id="copy-uid-btn" class="btn-copy">Copy</button>
+          </div>
+        </div>
+        <form id="add-friend-form" class="add-friend-form">
+          <input type="text" id="friend-uid-input" placeholder="Paste UID to start chat…" required>
+          <button type="submit" class="btn-add">Add</button>
+        </form>
+      </div>
+      <div id="friends-list">
+        <div class="friends-empty">Loading contacts…</div>
+      </div>
+    </aside>
+
+    <!-- CHAT AREA -->
+    <main class="chat-area">
+      <div id="empty-chat">
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12c0 2.16.68 4.15 1.85 5.75L2.4 21.6l3.96-1.39C7.86 21.37 9.87 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm0 18c-1.81 0-3.5-.5-4.96-1.35l-.36-.21-2.67.94.96-2.55-.23-.37C3.58 14.86 3 13.48 3 12c0-4.96 4.04-9 9-9s9 4.04 9-9 9z"/></svg>
+        </div>
+        <p>UID Chat for Web</p>
+        <span>Send and receive messages seamlessly. Select a contact to start a conversation, audio, or video call.</span>
+      </div>
+
+      <div id="active-chat" class="hidden">
+        <header class="chat-header">
+          <button class="back-btn" id="back-btn">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <div class="chat-header-avatar" id="chat-header-avatar">?</div>
+          <div class="chat-header-info">
+            <div id="chat-friend-name">—</div>
+            <div class="chat-status">Available</div>
+          </div>
+          <div class="call-actions-header">
+            <!-- Audio Call Button -->
+            <button id="btn-start-call" class="call-btn" title="Audio Call">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+            </button>
+            <!-- Video Call Button -->
+            <button id="btn-start-video-call" class="call-btn" title="Video Call">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M15 10.5V8c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v8c0 .55.45 1 1 1h10c.55 0 1-.45 1-1v-2.5l4 4v-11l-4 4z"/></svg>
+            </button>
+          </div>
+        </header>
+
+        <div id="chat-messages"></div>
+
+        <form id="send-message-form">
+          <input type="text" id="message-input" placeholder="Type a message" autocomplete="off">
+          <button type="submit" class="btn-send">
+            <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+          </button>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <!-- CALL MODAL -->
+  <div id="call-modal" class="hidden">
+    <div class="call-card" id="call-card">
+      
+      <!-- Video Elements (visible only in video mode) -->
+      <div id="video-container">
+        <!-- Note: remote-video plays both audio AND video. Works perfectly for audio-only calls even if container is hidden! -->
+        <video id="remote-video" autoplay playsinline></video>
+        <video id="local-video" autoplay playsinline muted></video>
+      </div>
+
+      <div class="call-info-wrapper">
+        <div id="call-modal-avatar" class="call-avatar-large">?</div>
+        <h2 id="call-peer-name">User Name</h2>
+        <p id="call-status-text">Ringing...</p>
+      </div>
+      
+      <div class="call-actions">
+        <button id="btn-accept-call" class="btn-call-action btn-accept hidden" title="Accept">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="white"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+        </button>
+        <button id="btn-end-call" class="btn-call-action btn-reject" title="End Call">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="white"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08c-.18-.17-.29-.42-.29-.7 0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.53-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28-.79-.74-1.69-1.36-2.67-1.85-.33-.16-.56-.5-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, updateDoc, arrayUnion, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, where, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAjSyReKaDPkK59En1p4q0oLgPUeeKJ-ig",
+      authDomain: "chat-app-db696.firebaseapp.com",
+      projectId: "chat-app-db696",
+      storageBucket: "chat-app-db696.firebasestorage.app",
+      messagingSenderId: "855095524866",
+      appId: "1:855095524866:web:9e37a81cf408704a43311b"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
+
+    let currentUser = null;
+    let currentFriend = null;
+    let friendsUnsubscribe = null;
+    let chatUnsubscribe = null;
+    let incomingCallUnsubscribe = null;
+    
+    // Background listener container to track multiple friends' chats
+    let backgroundChatUnsubscribes = {};
+
+    // WebRTC Globals
+    let localStream = null;
+    let remoteStream = null;
+    let peerConnection = null;
+    let callDocId = null;
+    let callUnsubscribe = null;
+    let isVideoCall = false; // Tracks current call type
+
+    const servers = {
+      iceServers: [
+        { urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] }
+      ]
+    };
+
+    // DOM Elements
+    const loginScreen = document.getElementById('login-screen');
+    const appScreen = document.getElementById('app-screen');
+    const myUidInput = document.getElementById('my-uid');
+    const friendsListEl = document.getElementById('friends-list');
+    const emptyChat = document.getElementById('empty-chat');
+    const activeChat = document.getElementById('active-chat');
+    const chatMessages = document.getElementById('chat-messages');
+    
+    // Call UI DOM
+    const callModal = document.getElementById('call-modal');
+    const callCard = document.getElementById('call-card');
+    const callPeerName = document.getElementById('call-peer-name');
+    const callStatusText = document.getElementById('call-status-text');
+    const callModalAvatar = document.getElementById('call-modal-avatar');
+    const btnAcceptCall = document.getElementById('btn-accept-call');
+    const btnEndCall = document.getElementById('btn-end-call');
+    const localVideo = document.getElementById('local-video');
+    const remoteVideo = document.getElementById('remote-video');
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2200);
+    }
+    
+    function getInitial(name) { return name ? name[0].toUpperCase() : '?'; }
+
+    // --- SERVICE WORKER REGISTRATION (Mobile Notification Fix) ---
+    let swRegistration = null;
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js')
+      .then(function(swReg) {
+        console.log('Service Worker is registered', swReg);
+        swRegistration = swReg;
+      })
+      .catch(function(error) {
+        console.error('Service Worker Error (Make sure sw.js file exists!)', error);
+      });
+    }
+
+    // --- MOBILE FRIENDLY NOTIFICATION UTILS ---
+    function sendNotification(title, options = {}) {
+      if (!('Notification' in window)) return;
+      
+      // Mobile Chrome requires a Service Worker for push notifications
+      if (Notification.permission === 'granted' && swRegistration) {
+        if (document.hidden || options.force) {
+          swRegistration.showNotification(title, {
+            body: options.body || '',
+            icon: 'https://cdn-icons-png.flaticon.com/512/3114/3114491.png', // Default chat icon
+            vibrate: [200, 100, 200, 100, 200], // Phone vibration pattern
+            requireInteraction: options.force ? true : false // Keep on screen if it's a call
+          });
+        }
+      }
+    }
+
+    // --- AUTH & SETUP ---
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentUser = user;
+        loginScreen.classList.add('hidden');
+        appScreen.classList.remove('hidden');
+        myUidInput.value = user.uid;
+
+        const userRef = doc(db, 'users', user.uid);
+        const userSnap = await getDoc(userRef);
+        if (!userSnap.exists()) await setDoc(userRef, { uid: user.uid, displayName: user.displayName, email: user.email, friends: [] });
+        
+        loadFriends();
+        listenForIncomingCalls();
+      } else {
+        currentUser = null;
+        loginScreen.classList.remove('hidden');
+        appScreen.classList.add('hidden');
+        appScreen.classList.remove('show-chat');
+        if (incomingCallUnsubscribe) incomingCallUnsubscribe();
+      }
+    });
+
+    // Login & Request Notification Permissions
+    document.getElementById('login-btn').addEventListener('click', () => {
+      if ('Notification' in window) {
+        Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+             console.log("Notification permission allowed by user!");
+          }
+        });
+      }
+      signInWithPopup(auth, provider).catch(err => showToast(err.message));
+    });
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      if (friendsUnsubscribe) friendsUnsubscribe();
+      if (chatUnsubscribe) chatUnsubscribe();
+      if (incomingCallUnsubscribe) incomingCallUnsubscribe();
+      Object.values(backgroundChatUnsubscribes).forEach(unsub => unsub());
+      backgroundChatUnsubscribes = {};
+      signOut(auth);
+    });
+
+    document.getElementById('copy-uid-btn').addEventListener('click', () => {
+      navigator.clipboard.writeText(myUidInput.value).then(() => showToast('UID copied')).catch(() => {
+        myUidInput.select(); document.execCommand('copy'); showToast('UID copied');
+      });
+    });
+
+    // --- FRIENDS & CHAT ---
+    document.getElementById('add-friend-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const friendUid = document.getElementById('friend-uid-input').value.trim();
+      if (!friendUid || friendUid === currentUser.uid) return showToast("Invalid UID");
+      try {
+        const friendRef = doc(db, 'users', friendUid);
+        if ((await getDoc(friendRef)).exists()) {
+          await updateDoc(doc(db, 'users', currentUser.uid), { friends: arrayUnion(friendUid) });
+          await updateDoc(friendRef, { friends: arrayUnion(currentUser.uid) });
+          document.getElementById('friend-uid-input').value = '';
+          showToast('Contact added!');
+        } else { showToast('User not found.'); }
+      } catch (err) { showToast(err.message); }
+    });
+
+    function loadFriends() {
+      if (friendsUnsubscribe) friendsUnsubscribe();
+      friendsUnsubscribe = onSnapshot(doc(db, 'users', currentUser.uid), async (docSnap) => {
+        if (!docSnap.exists()) return;
+        const friendUids = docSnap.data().friends || [];
+        if (friendUids.length === 0) return friendsListEl.innerHTML = '<div class="friends-empty">No contacts yet.<br>Share your UID!</div>';
+        
+        const friendsData = await Promise.all(friendUids.map(async uid => (await getDoc(doc(db, 'users', uid))).data()));
+        const validFriends = friendsData.filter(Boolean);
+        
+        renderFriendsList(validFriends);
+        setupBackgroundListeners(validFriends);
+      });
+    }
+
+    function setupBackgroundListeners(friends) {
+      friends.forEach(friend => {
+        const chatId = currentUser.uid > friend.uid ? `${currentUser.uid}_${friend.uid}` : `${friend.uid}_${currentUser.uid}`;
+        if (!backgroundChatUnsubscribes[chatId]) {
+          let isInitialLoad = true;
+          const q = query(collection(db, 'chats', chatId, 'messages'), orderBy('createdAt', 'asc'));
+          backgroundChatUnsubscribes[chatId] = onSnapshot(q, (snapshot) => {
+            if (isInitialLoad) { isInitialLoad = false; return; }
+            snapshot.docChanges().forEach(change => {
+              if (change.type === 'added') {
+                const msg = change.doc.data();
+                if (msg.senderId !== currentUser.uid) {
+                  const isCurrentChatOpen = (currentFriend && currentFriend.uid === friend.uid);
+                  if (!isCurrentChatOpen || document.hidden) {
+                    sendNotification(`New message from ${friend.displayName}`, { body: msg.text });
+                  }
+                }
+              }
+            });
+          });
+        }
+      });
+    }
+
+    function renderFriendsList(friends) {
+      friendsListEl.innerHTML = '';
+      friends.forEach(friend => {
+        const div = document.createElement('div');
+        div.className = `friend-item ${currentFriend?.uid === friend.uid ? 'active' : ''}`;
+        div.innerHTML = `<div class="friend-avatar">${getInitial(friend.displayName)}</div>
+                         <div class="friend-info"><div class="friend-name">${friend.displayName}</div>
+                         <div class="friend-email">${friend.email}</div></div>`;
+        div.onclick = () => openChat(friend);
+        friendsListEl.appendChild(div);
+      });
+    }
+
+    function openChat(friend) {
+      currentFriend = friend;
+      emptyChat.classList.add('hidden');
+      activeChat.classList.remove('hidden');
+      document.getElementById('chat-friend-name').textContent = friend.displayName;
+      document.getElementById('chat-header-avatar').textContent = getInitial(friend.displayName);
+      appScreen.classList.add('show-chat');
+      loadFriends();
+
+      const chatId = currentUser.uid > friend.uid ? `${currentUser.uid}_${friend.uid}` : `${friend.uid}_${currentUser.uid}`;
+      if (chatUnsubscribe) chatUnsubscribe();
+      chatUnsubscribe = onSnapshot(query(collection(db, 'chats', chatId, 'messages'), orderBy('createdAt', 'asc')), (snapshot) => {
+        chatMessages.innerHTML = '';
+        snapshot.docs.forEach(docSnap => {
+          const msg = docSnap.data();
+          const div = document.createElement('div');
+          div.className = `msg-bubble ${msg.senderId === currentUser.uid ? 'msg-me' : 'msg-them'}`;
+          div.textContent = msg.text;
+          chatMessages.appendChild(div);
+        });
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      });
+    }
+
+    document.getElementById('send-message-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const input = document.getElementById('message-input');
+      const text = input.value.trim();
+      if (!text || !currentFriend) return;
+      input.value = '';
+      const chatId = currentUser.uid > currentFriend.uid ? `${currentUser.uid}_${currentFriend.uid}` : `${currentFriend.uid}_${currentUser.uid}`;
+      await addDoc(collection(db, 'chats', chatId, 'messages'), { text, senderId: currentUser.uid, createdAt: serverTimestamp() });
+    });
+
+    document.getElementById('back-btn').addEventListener('click', () => appScreen.classList.remove('show-chat'));
+
+    // --- WEBRTC AUDIO & VIDEO CALL LOGIC ---
+
+    // 1. Listen for Incoming Calls
+    function listenForIncomingCalls() {
+      const q = query(collection(db, 'calls'), where('receiverId', '==', currentUser.uid), where('status', '==', 'ringing'));
+      incomingCallUnsubscribe = onSnapshot(q, (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === 'added') {
+            const callData = change.doc.data();
+            callDocId = change.doc.id;
+            isVideoCall = callData.type === 'video';
+            
+            showCallUI(callData.callerName, isVideoCall ? "Incoming Video Call..." : "Incoming Audio Call...", true, isVideoCall);
+            
+            // Send vibration/notification
+            sendNotification(isVideoCall ? "Incoming Video Call 📹" : "Incoming Audio Call 📞", { 
+              body: `${callData.callerName} is calling you...`, force: true 
+            });
+          }
+          if (change.type === 'modified' && change.doc.data().status === 'ended') {
+            hangUp();
+          }
+        });
+      });
+    }
+
+    // 2. Start Call (Caller)
+    async function initiateCall(isVideo) {
+      if (!currentFriend) return;
+      showToast(`Requesting ${isVideo ? 'camera and ' : ''}mic...`);
+      
+      try {
+        // Mobile friendly constraints
+        const constraints = { 
+          audio: true, 
+          video: isVideo ? { facingMode: "user" } : false 
+        };
+        localStream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (err) {
+        console.error("Media Error:", err);
+        if (err.name === 'NotAllowedError') {
+          return showToast("Permission denied. Ensure BOTH mic and camera are allowed.");
+        } else if (err.name === 'NotReadableError') {
+          return showToast("Camera or Mic is already in use by another app.");
+        } else if (err.name === 'NotFoundError') {
+          return showToast("Required camera or mic not found on this device.");
+        } else {
+          return showToast(`Media error: ${err.message}`);
+        }
+      }
+
+      isVideoCall = isVideo;
+      showCallUI(currentFriend.displayName, "Calling...", false, isVideo);
+      
+      if (isVideo) { localVideo.srcObject = localStream; }
+
+      peerConnection = new RTCPeerConnection(servers);
+      remoteStream = new MediaStream();
+      remoteVideo.srcObject = remoteStream;
+
+      localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+      peerConnection.ontrack = (event) => event.streams[0].getTracks().forEach(track => remoteStream.addTrack(track));
+
+      const callDocRef = await addDoc(collection(db, 'calls'), {
+        callerId: currentUser.uid, callerName: currentUser.displayName,
+        receiverId: currentFriend.uid, status: 'ringing', type: isVideo ? 'video' : 'audio'
+      });
+      callDocId = callDocRef.id;
+
+      const callerCandidatesCol = collection(callDocRef, 'callerCandidates');
+      peerConnection.onicecandidate = (event) => {
+        if (event.candidate) addDoc(callerCandidatesCol, event.candidate.toJSON());
+      };
+
+      const offerDescription = await peerConnection.createOffer();
+      await peerConnection.setLocalDescription(offerDescription);
+      await updateDoc(callDocRef, { offer: { type: offerDescription.type, sdp: offerDescription.sdp } });
+
+      callUnsubscribe = onSnapshot(callDocRef, (snapshot) => {
+        const data = snapshot.data();
+        if (!data) return;
+        if (data.status === 'ended') return hangUp();
+        if (data.answer && !peerConnection.currentRemoteDescription) {
+          const answerDescription = new RTCSessionDescription(data.answer);
+          peerConnection.setRemoteDescription(answerDescription);
+          callStatusText.textContent = "Connected";
+        }
+      });
+
+      onSnapshot(collection(callDocRef, 'receiverCandidates'), (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === 'added') peerConnection.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+        });
+      });
+    }
+
+    document.getElementById('btn-start-call').addEventListener('click', () => initiateCall(false));
+    document.getElementById('btn-start-video-call').addEventListener('click', () => initiateCall(true));
+
+    // 3. Answer Call (Receiver)
+    btnAcceptCall.addEventListener('click', async () => {
+      try {
+        const constraints = { 
+          audio: true, 
+          video: isVideoCall ? { facingMode: "user" } : false 
+        };
+        localStream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (err) {
+        console.error("Media Error:", err);
+        if (err.name === 'NotAllowedError') return showToast("Permission denied.");
+        if (err.name === 'NotReadableError') return showToast("Camera/Mic in use by another app.");
+        return showToast("Media access failed.");
+      }
+
+      callStatusText.textContent = "Connecting...";
+      btnAcceptCall.classList.add('hidden');
+
+      if (isVideoCall) {
+        callCard.classList.add('video-active');
+        localVideo.srcObject = localStream;
+      }
+
+      peerConnection = new RTCPeerConnection(servers);
+      remoteStream = new MediaStream();
+      remoteVideo.srcObject = remoteStream;
+
+      localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+      peerConnection.ontrack = (event) => event.streams[0].getTracks().forEach(track => remoteStream.addTrack(track));
+
+      const callDocRef = doc(db, 'calls', callDocId);
+      const callData = (await getDoc(callDocRef)).data();
+      
+      const receiverCandidatesCol = collection(callDocRef, 'receiverCandidates');
+      peerConnection.onicecandidate = (event) => {
+        if (event.candidate) addDoc(receiverCandidatesCol, event.candidate.toJSON());
+      };
+
+      await peerConnection.setRemoteDescription(new RTCSessionDescription(callData.offer));
+      const answerDescription = await peerConnection.createAnswer();
+      await peerConnection.setLocalDescription(answerDescription);
+      await updateDoc(callDocRef, { answer: { type: answerDescription.type, sdp: answerDescription.sdp }, status: 'connected' });
+
+      callStatusText.textContent = "Connected";
+
+      onSnapshot(collection(callDocRef, 'callerCandidates'), (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === 'added') peerConnection.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+        });
+      });
+
+      callUnsubscribe = onSnapshot(callDocRef, (snapshot) => {
+        if (snapshot.data()?.status === 'ended') hangUp();
+      });
+    });
+
+    // 4. Hang Up / End Call
+    btnEndCall.addEventListener('click', async () => {
+      if (callDocId) await updateDoc(doc(db, 'calls', callDocId), { status: 'ended' });
+      hangUp();
+    });
+
+    function hangUp() {
+      if (peerConnection) { peerConnection.close(); peerConnection = null; }
+      if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+      if (callUnsubscribe) { callUnsubscribe(); callUnsubscribe = null; }
+      
+      localVideo.srcObject = null;
+      remoteVideo.srcObject = null;
+      callDocId = null;
+      isVideoCall = false;
+      
+      callCard.classList.remove('video-active');
+      callModal.classList.add('hidden');
+    }
+
+    // UI Helpers
+    function showCallUI(name, status, isIncoming, isVideo) {
+      callPeerName.textContent = name;
+      callModalAvatar.textContent = getInitial(name);
+      callStatusText.textContent = status;
+      btnAcceptCall.classList.toggle('hidden', !isIncoming);
+      
+      if (isVideo && !isIncoming) {
+        callCard.classList.add('video-active');
+      } else {
+        callCard.classList.remove('video-active');
+      }
+
+      callModal.classList.remove('hidden');
+    }
+
+  </script>
+</body>
+</html>
